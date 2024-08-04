@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/video_streaming
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+logging:
+  level:
+    org.springframework: INFO  # Set Spring Framework logging level to INFO
+    com.stream.app: DEBUG  # Set your application's logging level to DEBUG
