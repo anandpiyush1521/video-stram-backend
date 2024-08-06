@@ -10,7 +10,16 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1000MB
+
+
 logging:
   level:
     org.springframework: INFO  # Set Spring Framework logging level to INFO
     com.stream.app: DEBUG  # Set your application's logging level to DEBUG
+
+files:
+  video: videos/
