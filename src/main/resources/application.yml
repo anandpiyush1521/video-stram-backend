@@ -23,3 +23,7 @@ logging:
 
 files:
   video: videos/
+
+file:
+  video:
+    hsl: videos_hsl/
