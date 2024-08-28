@@ -28,22 +28,6 @@ This API provides endpoints for managing video uploads, retrieving video metadat
 - Maven
 - PostgreSQL (optional, depending on your storage choice)
 
-### Setting Up PostgreSQL with Docker (if using PostgreSQL)
-
-1. **Pull PostgreSQL Docker Image**
-
-    ```bash
-    docker pull postgres:latest
-    ```
-
-2. **Run PostgreSQL Container**
-
-    ```bash
-    docker run --name postgres-container -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=yourpassword -e POSTGRES_DB=yourdatabase -p 5432:5432 -d postgres:latest
-    ```
-
-   Replace `yourpassword` and `yourdatabase` with your desired password and database name.
-
 ### Backend Setup
 
 1. **Clone the Repository**
