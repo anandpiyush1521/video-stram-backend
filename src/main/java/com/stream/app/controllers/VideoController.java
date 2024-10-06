@@ -3,6 +3,7 @@ package com.stream.app.controllers;
 import com.stream.app.entities.Video;
 import com.stream.app.helpers.AppConstants;
 import com.stream.app.playload.CustomMessage;
+import org.springframework.beans.factory.annotation.Value;
 import com.stream.app.services.VideoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -32,127 +33,128 @@ public class VideoController {
     private VideoService videoService;
 
 
-    // video upload
     @PostMapping
     public ResponseEntity<?> create(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
-            @RequestParam("description") String description
-    ){
-        //save video
+            @RequestParam("description") String description) {
+
         Video video = new Video();
         video.setTitle(title);
         video.setDescription(description);
         video.setVideoId(UUID.randomUUID().toString());
+
         Video savedVideo = videoService.save(video, file);
 
-        if(savedVideo != null){
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(savedVideo);
-        }else{
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(CustomMessage.builder()
-                            .message("Failed to save video")
-                            .success(false)
-                            .build()
-                    );
+        if (savedVideo != null) {
+            return ResponseEntity.status(HttpStatus.OK).body(video);
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(CustomMessage.builder().message("Video not uploaded ").success(false).build());
         }
+
+
     }
 
-    //get all video
+
+    //get all videos
+
     @GetMapping
-    public List<Video> getAll(){
+    public List<Video> getAll() {
         return videoService.getAll();
     }
 
-    // stream video
-    @GetMapping("/stream/{videoId}")
-    public ResponseEntity<Resource> stream(
-            @PathVariable String videoId
-    ){
-        Video video = videoService.get(videoId);
 
+    // stream video :
+//    http://localhost:8080/api/v1/videos/stream/35212512
+
+    @GetMapping("/stream/{videoId}")
+    public ResponseEntity<Resource> stream(@PathVariable String videoId) {
+
+        Video video = videoService.get(videoId);
         String contentType = video.getContentType();
         String filePath = video.getFilePath();
-
         Resource resource = new FileSystemResource(filePath);
-
-        if(contentType == null){
-            contentType="application/octet-stream";
+        if (contentType == null) {
+            contentType = "application/octet-stream";
         }
 
-        return ResponseEntity
-                .ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .body(resource);
+
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType)).body(resource);
+
+
     }
+
 
     // stream video in chunks
     @GetMapping("/stream/range/{videoId}")
-    public ResponseEntity<Resource> streamVideoRange(
-            @PathVariable String videoId,
-            @RequestHeader(value = "Range", required = false) String range
-    ){
+    public ResponseEntity<Resource> streamVideoRange(@PathVariable String videoId, @RequestHeader(value = "Range", required = false) String range) {
         System.out.println(range);
+        //
 
         Video video = videoService.get(videoId);
         Path path = Paths.get(video.getFilePath());
 
         Resource resource = new FileSystemResource(path);
+
         String contentType = video.getContentType();
-        if(contentType == null){
-            contentType= "application/octet-stream";
+
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+
         }
 
-        //file's length
+        //file ki length
         long fileLength = path.toFile().length();
 
-        if(range == null){
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .body(resource);
+
+        //pahle jaisa hi code hai kyuki range header null
+        if (range == null) {
+            return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType)).body(resource);
         }
 
-        //finding start and end range
+        //calculating start and end range
+
         long rangeStart;
+
         long rangeEnd;
 
         String[] ranges = range.replace("bytes=", "").split("-");
         rangeStart = Long.parseLong(ranges[0]);
 
-//        if(ranges.length > 1){
-//            rangeEnd = Long.parseLong(ranges[1]);
-//        }else{
-//            rangeEnd = fileLength - 1;
-//        }
-//
-//        if(rangeEnd > fileLength - 1){
-//            rangeEnd = fileLength - 1;
-//        }
-
         rangeEnd = rangeStart + AppConstants.CHUNK_SIZE - 1;
-        if(rangeEnd >= fileLength){
+
+        if (rangeEnd >= fileLength) {
             rangeEnd = fileLength - 1;
         }
 
-        System.out.println("Range Start: "+rangeStart);
-        System.out.println("Range End: "+rangeEnd);
+//        if (ranges.length > 1) {
+//            rangeEnd = Long.parseLong(ranges[1]);
+//        } else {
+//            rangeEnd = fileLength - 1;
+//        }
+//
+//        if (rangeEnd > fileLength - 1) {
+//            rangeEnd = fileLength - 1;
+//        }
 
+
+        System.out.println("range start : " + rangeStart);
+        System.out.println("range end : " + rangeEnd);
         InputStream inputStream;
 
-        try{
+        try {
+
             inputStream = Files.newInputStream(path);
             inputStream.skip(rangeStart);
-            long contentLength = rangeEnd-rangeStart+1;
+            long contentLength = rangeEnd - rangeStart + 1;
+
 
             byte[] data = new byte[(int) contentLength];
             int read = inputStream.read(data, 0, data.length);
-            System.out.println("read(no of bytes): "+read);
+            System.out.println("read(number of bytes) : " + read);
 
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Range", "bytes "+rangeStart+"-"+rangeEnd+"/"+fileLength);
+            headers.add("Content-Range", "bytes " + rangeStart + "-" + rangeEnd + "/" + fileLength);
             headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
             headers.add("Pragma", "no-cache");
             headers.add("Expires", "0");
@@ -165,8 +167,70 @@ public class VideoController {
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(new ByteArrayResource(data));
 
-        }catch (IOException ex){
+
+        } catch (IOException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+
+
+    }
+
+
+    //serve hls playlist
+
+    //master.m2u8 file
+
+    @Value("${file.video.hsl}")
+    private String HSL_DIR;
+
+    @GetMapping("/{videoId}/master.m3u8")
+    public ResponseEntity<Resource> serverMasterFile(
+            @PathVariable String videoId
+    ) {
+
+//        creating path
+        Path path = Paths.get(HSL_DIR, videoId, "master.m3u8");
+
+        System.out.println(path);
+
+        if (!Files.exists(path)) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Resource resource = new FileSystemResource(path);
+
+        return ResponseEntity
+                .ok()
+                .header(
+                        HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl"
+                )
+                .body(resource);
+
+
+    }
+
+    //serve the segments
+
+    @GetMapping("/{videoId}/{segment}.ts")
+    public ResponseEntity<Resource> serveSegments(
+            @PathVariable String videoId,
+            @PathVariable String segment
+    ) {
+
+        // create path for segment
+        Path path = Paths.get(HSL_DIR, videoId, segment + ".ts");
+        if (!Files.exists(path)) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Resource resource = new FileSystemResource(path);
+
+        return ResponseEntity
+                .ok()
+                .header(
+                        HttpHeaders.CONTENT_TYPE, "video/mp2t"
+                )
+                .body(resource);
+
     }
 }
