@@ -6,8 +6,9 @@
 </p>
 
 <p align="center">
-  <img src="screenshot/videoinchunks.png" width="1000" alt="Video Streaming API">
+  <img src="screenshot/frontend.png" width="1000" alt="Video Streaming API">
 </p>
+
 
 ## Overview
 
@@ -19,6 +20,11 @@ This API provides endpoints for managing video uploads, retrieving video metadat
 - **Metadata Retrieval**: Provides details about the uploaded videos.
 - **Video Streaming**: Supports streaming videos directly by their ID.
 - **Chunked Streaming**: Allows partial content delivery and seeking within videos.
+
+## System Overview
+<p align="center">
+  <img src="screenshot/videoinchunks.png" width="1000" alt="Video Streaming API">
+</p>
 
 ## Setup and Installation
 
